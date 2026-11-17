@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrganIZ@: Tu Guía Digital | Objeto Virtual de Aprendizaje (OVA)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- React 18 & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    h1, h2, h3, .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-agenda, #printable-agenda * {
+        visibility: visible;
+      }
+      #printable-agenda {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- ICONOS SVG ---
+    const IconLock = () => (
+      <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    );
+
+    const IconCheckCircle = () => (
+      <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    );
+
+    const IconCalendar = () => (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    );
+
+    const IconDownload = () => (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+    );
+
+    const IconPlus = () => (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    );
+
+    const IconTrash = () => (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    );
+
+    const IconSparkles = () => (
+      <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
+      </svg>
+    );
+
+    const IconExternalLink = () => (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+    );
+
+    // Tareas predeterminadas
+    const initialPresetTasks = [
+      { id: 't1', title: 'Entrega de Proyecto Final de Ciencias', subject: 'Biología', due: 'Mañana a las 8:00 AM', quadrant: 'q1', isCustom: false },
+      { id: 't2', title: 'Estudiar para el examen bimestral', subject: 'Matemáticas', due: 'En 10 días', quadrant: 'q2', isCustom: false },
+      { id: 't3', title: 'Responder mensajes de memes en el grupo de WhatsApp', subject: 'Social', due: 'Inmediato', quadrant: 'q4', isCustom: false },
+      { id: 't4', title: 'Llamar a un compañero para pedirle apuntes atrasados', subject: 'General', due: 'Hoy tarde', quadrant: 'q3', isCustom: false },
+      { id: 't5', title: 'Hacer ejercicio / salir a trotar 30 mins', subject: 'Salud', due: 'Semanal', quadrant: 'q2', isCustom: false },
+    ];
+
+    const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const TIME_BLOCKS = [
+      { id: 'morning', label: 'Mañana (8:00 - 12:00)', sub: 'Horas escolares / Clases' },
+      { id: 'afternoon', label: 'Tarde (14:00 - 17:00)', sub: 'Estudio enfocado / Tareas' },
+      { id: 'evening', label: 'Noche (18:00 - 21:00)', sub: 'Repaso ligero / Descanso' },
+    ];
+
+    // Módulos
+    const LEARNING_MODULES = [
+      {
+        moduleNumber: 1,
+        sceneId: 3,
+        title: 'Módulo 1: Conceptualización & Cápsula de Video',
+        sub: 'La Matriz de Eisenhower explicada para estudiantes',
+        tag: 'Video & Conceptos',
+        duration: '5 min',
+        icon: '🎬'
+      },
+      {
+        moduleNumber: 2,
+        sceneId: 4,
+        title: 'Módulo 2: Laboratorio de Priorización',
+        sub: 'Matriz interactiva, crea y elimina tus tareas reales',
+        tag: 'Práctica Guiada',
+        duration: '7 min',
+        icon: '📊'
+      },
+      {
+        moduleNumber: 3,
+        sceneId: 5,
+        title: 'Módulo 3: Diseñador de Agenda Semanal',
+        sub: 'Añade actividades directamente y descárgala en PNG',
+        tag: 'Planificación & Descarga',
+        duration: '6 min',
+        icon: '📅'
+      },
+      {
+        moduleNumber: 4,
+        sceneId: 6,
+        title: 'Módulo 4: Evaluación Formativa (Quiz)',
+        sub: 'Casos reales con retroalimentación correctiva inmediata',
+        tag: 'Evaluación',
+        duration: '5 min',
+        icon: '🎯'
+      },
+      {
+        moduleNumber: 5,
+        sceneId: 7,
+        title: 'Módulo 5: Salón de la Fama & Diploma',
+        sub: 'Insignia oficial y Diploma de Acreditación descargable',
+        tag: 'Certificación & Cierre',
+        duration: '3 min',
+        icon: '🏆'
+      }
+    ];
+
+    // Diapositivas de la Cápsula Interactiva
+    const SLIDES_CAPSULE = [
+      {
+        step: 1,
+        title: "¿Qué es la Matriz de Eisenhower?",
+        desc: "Fue popularizada por Dwight D. Eisenhower. Es una herramienta visual que divide todo lo que tienes que hacer según dos preguntas clave: ¿Es realmente importante? ¿Y es urgente?",
+        tip: "La trampa escolar: Creemos que todo lo urgente es importante, ¡pero casi nunca es así!",
+        badge: "Fundamento"
+      },
+      {
+        step: 2,
+        title: "Cuadrante 1: Urgente e Importante (¡Hacer Ya!)",
+        desc: "Son las crisis académicas que no pueden posponerse: una tarea que vence mañana a primera hora, o estudiar para la prueba de hoy. Si no las haces, hay consecuencias graves inmediatas.",
+        tip: "Cuidado: Si pasas toda la semana en este cuadrante, sufrirás estrés, ansiedad y fatiga escolar.",
+        badge: "Crisis"
+      },
+      {
+        step: 3,
+        title: "Cuadrante 2: Importante pero No Urgente (¡Planificar!)",
+        desc: "¡ESTE ES EL CUADRANTE DEL ÉXITO! Son tareas que aportan a tu futuro pero que nadie te está exigiendo para hoy mismo: estudiar con 2 semanas de anticipación, descansar bien, hacer deporte y leer.",
+        tip: "Regla de oro: El 60% de tu energía debe estar aquí para evitar que las tareas se conviertan en crisis.",
+        badge: "El Secreto Pro"
+      },
+      {
+        step: 4,
+        title: "Cuadrantes 3 y 4: Las Trampas del Tiempo (¡Delegar y Eliminar!)",
+        desc: "Q3 son urgencias de otros (mensajes imprevistos, favores durante tu hora de estudio). Q4 son los ladrones de tiempo: scroll infinito en redes o maratones de videojuegos antes de entregar proyectos.",
+        tip: "Aprende a decir 'no' a tiempo para proteger tu concentración y tu salud mental.",
+        badge: "Ladrones de Tiempo"
+      }
+    ];
+
+    // PREGUNTAS DEL QUIZ CON RETROALIMENTACIÓN ESPECÍFICA POR CADA OPCIÓN
+    // =========================================================
+    // REFERENCIAS BIBLIOGRÁFICAS (Normas APA 7.ª edición)
+    // Para editar: cambia o agrega objetos dentro de "items".
+    // before = autores, año y título normal | italic = parte en cursiva | after = resto
+    // =========================================================
+    const BIBLIOGRAPHY = [
+      {
+        category: '📘 Gestión del tiempo y Matriz de Eisenhower',
+        items: [
+          { before: 'Allen, D. (2001). ', italic: 'Getting things done: The art of stress-free productivity', after: '. Viking.', url: '' },
+          { before: 'Britton, B. K., & Tesser, A. (1991). Effects of time-management practices on college grades. ', italic: 'Journal of Educational Psychology, 83', after: '(3), 405–410.', url: 'https://doi.org/10.1037/0022-0663.83.3.405' },
+          { before: 'Claessens, B. J. C., van Eerde, W., Rutte, C. G., & Roe, R. A. (2007). A review of the time management literature. ', italic: 'Personnel Review, 36', after: '(2), 255–276.', url: 'https://doi.org/10.1108/00483480710726136' },
+          { before: 'Covey, S. R. (1989). ', italic: 'The 7 habits of highly effective people: Restoring the character ethic', after: '. Free Press.', url: '' },
+          { before: 'Macan, T. H. (1994). Time management: Test of a process model. ', italic: 'Journal of Applied Psychology, 79', after: '(3), 381–391.', url: 'https://doi.org/10.1037/0021-9010.79.3.381' },
+          { before: 'Steel, P. (2007). The nature of procrastination: A meta-analytic and theoretical review of quintessential self-regulatory failure. ', italic: 'Psychological Bulletin, 133', after: '(1), 65–94.', url: 'https://doi.org/10.1037/0033-2909.133.1.65' },
+        ],
+      },
+      {
+        category: '🧠 Aprendizaje autorregulado y diseño instruccional',
+        items: [
+          { before: 'Branch, R. M. (2009). ', italic: 'Instructional design: The ADDIE approach', after: '. Springer.', url: 'https://doi.org/10.1007/978-0-387-09506-6' },
+          { before: 'Deterding, S., Dixon, D., Khaled, R., & Nacke, L. (2011). From game design elements to gamefulness: Defining "gamification". En ', italic: 'Proceedings of the 15th International Academic MindTrek Conference', after: ' (pp. 9–15). ACM.', url: 'https://doi.org/10.1145/2181037.2181040' },
+          { before: 'Mayer, R. E. (2009). ', italic: 'Multimedia learning', after: ' (2.ª ed.). Cambridge University Press.', url: '' },
+          { before: 'Zimmerman, B. J. (2002). Becoming a self-regulated learner: An overview. ', italic: 'Theory Into Practice, 41', after: '(2), 64–70.', url: 'https://doi.org/10.1207/s15430421tip4102_2' },
+        ],
+      },
+      {
+        category: '🎬 Recursos multimedia',
+        items: [
+          { before: 'Universidad de Castilla-La Mancha. (s.f.). ', italic: 'Técnicas para la gestión del tiempo: El método Eisenhower', after: ' [Video]. YouTube.', url: 'https://www.youtube.com/watch?v=hFaiO-8Hun8' },
+        ],
+      },
+    ];
+    const QUIZ_QUESTIONS = [
+      {
+        id: 1,
+        question: "Tienes un examen parcial crucial en 2 semanas que define el 30% de tu materia. ¿En qué cuadrante de Eisenhower se ubica HOY?",
+        options: [
+          {
+            text: "Cuadrante 1: Urgente e Importante (tengo que desvelarme hoy mismo).",
+            isCorrect: false,
+            feedback: "⚠️ Cuidado pedagógico: Desvelarte hoy por un examen que es en 2 semanas genera agotamiento prematuro (burnout). El Cuadrante 1 es exclusivo para emergencias inmediatas que vencen ya."
+          },
+          {
+            text: "Cuadrante 2: No Urgente pero Importante (debo planificar sesiones cortas con días de anticipación).",
+            isCorrect: true,
+            feedback: "🎉 ¡Excelente razonamiento! Como aún tienes 2 semanas, estás en el momento perfecto para planificar sesiones de 45 minutos. Estudiar con anticipación (Q2) evita que se convierta en una crisis angustiante del Q1."
+          },
+          {
+            text: "Cuadrante 3: Urgente pero No Importante (es urgente porque me da ansiedad).",
+            isCorrect: false,
+            feedback: "⚠️ Error de concepto: Sentir nervios o ansiedad no convierte una tarea en Cuadrante 3. El Q3 es para interrupciones o pedidos de otros que no aportan a tus notas. Un examen del 30% es de máxima importancia."
+          },
+          {
+            text: "Cuadrante 4: Ni Urgente ni Importante (aún faltan muchos días para preocuparme).",
+            isCorrect: false,
+            feedback: "⚠️ Alerta de procrastinación: Dejarlo de lado porque 'faltan muchos días' es la trampa clásica. Las materias importantes nunca pertenecen al Cuadrante 4 (ocio/descarte)."
+          }
+        ]
+      },
+      {
+        id: 2,
+        question: "Estás estudiando concentrado en tu habitación y un amigo te envía mensajes diciendo: '¡Rápido, mira este meme/video viral y contesta ya!'. ¿Qué cuadrante representa esta situación?",
+        options: [
+          {
+            text: "Cuadrante 1 (Urgente e Importante porque es mi mejor amigo).",
+            isCorrect: false,
+            feedback: "⚠️ Atención: La urgencia social de un amigo para ver un meme no es una emergencia real. Atenderla en medio de tu sesión rompe tu concentración y tardarás más de 15 minutos en volver a enfocarte."
+          },
+          {
+            text: "Cuadrante 2 (Importante para mi relajación mental).",
+            isCorrect: false,
+            feedback: "⚠️ Distinción clave: El descanso activo planificado sí es Q2, pero distraerte por impulso en redes mientras estudias es una interrupción (Q3) o pérdida de tiempo (Q4)."
+          },
+          {
+            text: "Cuadrante 3 o 4 (Urgencia ajena ficticia / Distracción: ¡Ignorar o silenciar hasta terminar tu bloque!).",
+            isCorrect: true,
+            feedback: "🎉 ¡Gran criterio de priorización! Las notificaciones y presiones sociales ajenas son ladrones de tiempo. Silencia las notificaciones o responde cuando hayas terminado tu bloque de estudio."
+          },
+          {
+            text: "Cuadrante 1 (Debo responder de inmediato o se enoja conmigo).",
+            isCorrect: false,
+            feedback: "⚠️ Asertividad escolar: Decir 'te contesto en 30 minutos cuando termine de estudiar' protege tu tiempo. Tus amigos comprenderán que tu estudio es importante."
+          }
+        ]
+      },
+      {
+        id: 3,
+        question: "¿Cuál es la regla de oro para evitar el agotamiento escolar (burnout) en tu agenda semanal?",
+        options: [
+          {
+            text: "Llenar cada hora del día de tareas sin ningún minuto libre.",
+            isCorrect: false,
+            feedback: "⚠️ Riesgo de sobrecarga: Llenar cada hora sin descanso satura tu memoria de trabajo y reduce tu retención. Estudiar sin pausas es contraproducente."
+          },
+          {
+            text: "Dejar bloques protegidos para descanso, deporte y comida en el Cuadrante 2.",
+            isCorrect: true,
+            feedback: "🎉 ¡Totalmente cierto! Tu cerebro necesita descansos para consolidar lo aprendido. Reservar tiempo de autocuidado en el Cuadrante 2 previene la fatiga y mantiene tu motivación al máximo."
+          },
+          {
+            text: "Estudiar únicamente la noche anterior con desvelo para aprovechar la adrenalina.",
+            isCorrect: false,
+            feedback: "⚠️ Mito peligroso: Desvelarse antes de un examen daña los procesos de memoria a largo plazo y causa lagunas mentales durante la prueba."
+          },
+          {
+            text: "Eliminar todas las tareas difíciles y hacer solo lo fácil y rápido.",
+            isCorrect: false,
+            feedback: "⚠️ Evitación cognitiva: Postergar las tareas complejas solo acumula estrés. Lo correcto es dividirlas en pasos pequeños y agendarlas en bloques manejables."
+          }
+        ]
+      }
+    ];
+
+    function App() {
+      const [studentName, setStudentName] = useState('');
+      const [schoolGrade, setSchoolGrade] = useState('Educación Media / Grado 10-11');
+      const [mainChallenge, setMainChallenge] = useState('Dejo todo para última hora (Procrastinación)');
+      const [xpPoints, setXpPoints] = useState(100);
+
+      const [currentScene, setCurrentScene] = useState(1);
+      const [unlockedScenes, setUnlockedScenes] = useState({
+        1: true,
+        2: false,
+        3: false,
+        4: false,
+        5: false,
+        6: false,
+        7: false,
+      });
+
+      const [toastMessage, setToastMessage] = useState(null);
+
+      // VIDEO & CÁPSULA
+      const [youtubeVideoId, setYoutubeVideoId] = useState('hFaiO-8Hun8');
+      const [mediaMode, setMediaMode] = useState('youtube');
+      const [showReferences, setShowReferences] = useState(false);
+      const [currentSlide, setCurrentSlide] = useState(0);
+      const [customVideoUrl, setCustomVideoUrl] = useState('');
+
+      // TAREAS (MÓDULO 2)
+      const [tasks, setTasks] = useState(initialPresetTasks);
+      const [newTaskTitle, setNewTaskTitle] = useState('');
+      const [newTaskSubject, setNewTaskSubject] = useState('');
+      const [newTaskDue, setNewTaskDue] = useState('Esta semana');
+      const [newTaskQuadrant, setNewTaskQuadrant] = useState('q2');
+
+      // Checkpoint Video
+      const [videoWatched, setVideoWatched] = useState(false);
+      const [videoCheckpointAnswer, setVideoCheckpointAnswer] = useState(null);
+
+      // AGENDA SEMANAL (MÓDULO 3)
+      const [weeklySchedule, setWeeklySchedule] = useState({
+        'Lunes-afternoon': ['Entrega de Proyecto Final de Ciencias'],
+        'Martes-afternoon': ['Estudiar para el examen bimestral'],
+        'Miércoles-evening': ['Hacer ejercicio / salir a trotar 30 mins'],
+      });
+
+      // Formulario directo para añadir actividades en la agenda
+      const [agendaDirectTitle, setAgendaDirectTitle] = useState('');
+      const [agendaDirectDay, setAgendaDirectDay] = useState('Lunes');
+      const [agendaDirectBlock, setAgendaDirectBlock] = useState('afternoon');
+
+      // QUIZ EVALUATIVO (MÓDULO 4)
+      const [quizAnswers, setQuizAnswers] = useState({});
+      const [quizSubmitted, setQuizSubmitted] = useState(false);
+      const [quizScore, setQuizScore] = useState(0);
+
+      const diplomaCanvasRef = useRef(null);
+      const agendaCanvasRef = useRef(null);
+
+      const triggerLockAlert = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+      };
+
+      const unlockNextScene = (nextSceneNum, earnedXp = 50) => {
+        setUnlockedScenes(prev => ({ ...prev, [nextSceneNum]: true }));
+        setXpPoints(prev => prev + earnedXp);
+        setCurrentScene(nextSceneNum);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.7 }
+          });
+        }
+      };
+
+      const handleStartOnboarding = (e) => {
+        e.preventDefault();
+        if (!studentName.trim()) {
+          triggerLockAlert("Por favor escribe tu nombre completo para comenzar.");
+          return;
+        }
+
+        setUnlockedScenes(prev => ({
+          ...prev,
+          1: true,
+          2: true,
+          3: true,
+        }));
+        setXpPoints(prev => prev + 50);
+        setCurrentScene(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+        }
+      };
+
+      const handleNavigateToScene = (targetSceneId) => {
+        if (unlockedScenes[targetSceneId]) {
+          setCurrentScene(targetSceneId);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          const reqs = {
+            3: "el registro de tu nombre",
+            4: "el Módulo 1 (Cápsula de Video y Checkpoint)",
+            5: "el Módulo 2 (Laboratorio de Priorización)",
+            6: "el Módulo 3 (Diseñador de Agenda Semanal)",
+            7: "el Módulo 4 (Aprobar el Quiz Evaluativo)"
+          };
+          triggerLockAlert(`🔒 Módulo Bloqueado: Primero debes completar ${reqs[targetSceneId] || 'la actividad anterior'} para desbloquear este contenido.`);
+        }
+      };
+
+      // MÓDULO 2: Añadir Tarea
+      const handleAddCustomTask = (e) => {
+        e.preventDefault();
+        if (!newTaskTitle.trim()) return;
+
+        const newTask = {
+          id: 'custom-' + Date.now(),
+          title: newTaskTitle.trim(),
+          subject: newTaskSubject.trim() || 'Mi Tarea',
+          due: newTaskDue,
+          quadrant: newTaskQuadrant,
+          isCustom: true,
+        };
+
+        setTasks(prev => [...prev, newTask]);
+        setNewTaskTitle('');
+        setNewTaskSubject('');
+        setXpPoints(prev => prev + 25);
+        triggerLockAlert("✨ ¡Genial! Tu tarea escolar fue agregada a la matriz.");
+      };
+
+      // MÓDULO 2: Eliminar Tarea (Nueva funcionalidad)
+      const handleDeleteTask = (taskId, taskTitle) => {
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+        triggerLockAlert(`🗑️ Tarea "${taskTitle.slice(0, 20)}..." eliminada.`);
+      };
+
+      // MÓDULO 3: Añadir Actividad Directa a la Agenda
+      const handleAddDirectAgendaActivity = (e) => {
+        e.preventDefault();
+        if (!agendaDirectTitle.trim()) return;
+
+        const slotKey = `${agendaDirectDay}-${agendaDirectBlock}`;
+        const newTitle = agendaDirectTitle.trim();
+
+        setWeeklySchedule(prev => {
+          const current = prev[slotKey] || [];
+          return {
+            ...prev,
+            [slotKey]: [...current, newTitle]
+          };
+        });
+
+        setAgendaDirectTitle('');
+        setXpPoints(prev => prev + 15);
+        triggerLockAlert(`📅 Actividad agregada a ${agendaDirectDay} (${agendaDirectBlock === 'morning' ? 'Mañana' : agendaDirectBlock === 'afternoon' ? 'Tarde' : 'Noche'}).`);
+      };
+
+      const handleAssignToAgenda = (taskTitle, day, blockId) => {
+        const slotKey = `${day}-${blockId}`;
+        setWeeklySchedule(prev => {
+          const current = prev[slotKey] || [];
+          if (current.includes(taskTitle)) return prev;
+          return { ...prev, [slotKey]: [...current, taskTitle] };
+        });
+      };
+
+      const handleRemoveFromAgenda = (day, blockId, taskTitle) => {
+        const slotKey = `${day}-${blockId}`;
+        setWeeklySchedule(prev => ({
+          ...prev,
+          [slotKey]: (prev[slotKey] || []).filter(t => t !== taskTitle)
+        }));
+      };
+
+      const handleVideoCheckpoint = (optionIndex) => {
+        setVideoCheckpointAnswer(optionIndex);
+        if (optionIndex === 1) {
+          setVideoWatched(true);
+        }
+      };
+
+      // MÓDULO 4: Evaluar Quiz
+      const handleEvaluateQuiz = () => {
+        let correctCount = 0;
+        QUIZ_QUESTIONS.forEach(q => {
+          const selectedIdx = quizAnswers[q.id];
+          if (selectedIdx !== undefined && q.options[selectedIdx].isCorrect) {
+            correctCount++;
+          }
+        });
+        const finalScore = Math.round((correctCount / QUIZ_QUESTIONS.length) * 100);
+        setQuizScore(finalScore);
+        setQuizSubmitted(true);
+      };
+
+      // DIPLOMA CANVAS
+      const generateAndDownloadDiploma = () => {
+        const canvas = diplomaCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+        bgGrad.addColorStop(0, '#FFFFFF');
+        bgGrad.addColorStop(1, '#F8FAFC');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = '#1E3A8A';
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#D97706';
+        ctx.strokeRect(36, 36, W - 72, H - 72);
+
+        const drawCorner = (x, y) => {
+          ctx.fillStyle = '#D97706';
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, Math.PI * 2);
+          ctx.fill();
+        };
+        drawCorner(42, 42);
+        drawCorner(W - 42, 42);
+        drawCorner(42, H - 42);
+        drawCorner(W - 42, H - 42);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#4F46E5';
+        ctx.font = 'bold 22px Outfit, sans-serif';
+        ctx.fillText('ORGANIZ@ • OBJETO VIRTUAL DE APRENDIZAJE', W / 2, 95);
+
+        ctx.fillStyle = '#0F172A';
+        ctx.font = 'bold 44px Outfit, sans-serif';
+        ctx.fillText('DIPLOMA DE EXCELENCIA ACADÉMICA', W / 2, 155);
+
+        ctx.fillStyle = '#64748B';
+        ctx.font = '500 20px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('En Gestión del Tiempo, Planificación y Priorización Escolar', W / 2, 190);
+
+        ctx.strokeStyle = '#CBD5E1';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(W / 2 - 250, 215);
+        ctx.lineTo(W / 2 + 250, 215);
+        ctx.stroke();
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Se otorga el presente reconocimiento oficial a:', W / 2, 260);
+
+        ctx.fillStyle = '#1E3A8A';
+        ctx.font = 'bold 50px Outfit, sans-serif';
+        ctx.fillText(studentName || 'Estudiante Ejemplar', W / 2, 330);
+
+        ctx.fillStyle = '#334155';
+        ctx.font = '18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(`Nivel: ${schoolGrade} • Puntaje de Maestría: ${xpPoints} XP`, W / 2, 375);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = 'italic 18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Por haber demostrado dominio teórico-práctico de la Matriz de Eisenhower, estructurar', W / 2, 430);
+        ctx.fillText('su agenda semanal personalizada y superar los dilemas de priorización escolar.', W / 2, 460);
+
+        const sealX = W / 2;
+        const sealY = 560;
+        ctx.fillStyle = '#FEF3C7';
+        ctx.beginPath();
+        ctx.arc(sealX, sealY, 55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#D97706';
+        ctx.stroke();
+
+        ctx.fillStyle = '#B45309';
+        ctx.font = 'bold 15px Outfit, sans-serif';
+        ctx.fillText('ORGANIZADOR', sealX, sealY - 10);
+        ctx.font = 'bold 20px Outfit, sans-serif';
+        ctx.fillText('★ PRO ★', sealX, sealY + 12);
+        ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('CERTIFICADO', sealX, sealY + 28);
+
+        const todayStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(180, 680);
+        ctx.lineTo(380, 680);
+        ctx.stroke();
+        ctx.fillStyle = '#0F172A';
+        ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('OrganIZ@ Digital Team', 280, 705);
+        ctx.fillStyle = '#64748B';
+        ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Diseño Instruccional & Pedagogía', 280, 725);
+
+        ctx.beginPath();
+        ctx.moveTo(W - 380, 680);
+        ctx.lineTo(W - 180, 680);
+        ctx.stroke();
+        ctx.fillStyle = '#0F172A';
+        ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(todayStr, W - 280, 705);
+        ctx.fillStyle = '#64748B';
+        ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('Fecha de Expedición Oficial', W - 280, 725);
+
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '12px monospace';
+        ctx.fillText(`ID de Certificación: OVA-ORG-${Math.floor(100000 + Math.random() * 900000)} | Verificación Autónoma`, W / 2, 790);
+
+        setTimeout(() => {
+          const imageURI = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.download = `Diploma_OrganIZA_${(studentName || 'Estudiante').replace(/\s+/g, '_')}.png`;
+          downloadLink.href = imageURI;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }, 100);
+      };
+
+      // AGENDA CANVAS
+      const generateAndDownloadAgenda = () => {
+        const canvas = agendaCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(0, 0, W, H);
+
+        const bannerGrad = ctx.createLinearGradient(0, 0, W, 0);
+        bannerGrad.addColorStop(0, '#4338CA');
+        bannerGrad.addColorStop(1, '#6366F1');
+        ctx.fillStyle = bannerGrad;
+        ctx.fillRect(0, 0, W, 110);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 32px Outfit, sans-serif';
+        ctx.fillText('MI AGENDA SEMANAL DE ÉXITO ESCOLAR', 50, 52);
+
+        ctx.font = '500 18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = '#E0E7FF';
+        ctx.fillText(`Estudiante: ${studentName || 'Estudiante'} • Metodología: Matriz de Eisenhower • Meta: Eliminar la procrastinación`, 50, 85);
+
+        const startX = 220;
+        const colWidth = (W - startX - 40) / DAYS.length;
+        const startY = 130;
+
+        DAYS.forEach((day, idx) => {
+          const x = startX + idx * colWidth;
+          ctx.fillStyle = '#EEF2FF';
+          ctx.fillRect(x, startY, colWidth - 8, 45);
+          ctx.strokeStyle = '#C7D2FE';
+          ctx.strokeRect(x, startY, colWidth - 8, 45);
+
+          ctx.fillStyle = '#312E81';
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 18px Outfit, sans-serif';
+          ctx.fillText(day, x + (colWidth - 8) / 2, startY + 28);
+        });
+
+        const rowHeight = 175;
+        TIME_BLOCKS.forEach((block, rIdx) => {
+          const y = startY + 55 + rIdx * (rowHeight + 10);
+
+          ctx.fillStyle = '#F1F5F9';
+          ctx.fillRect(30, y, startX - 40, rowHeight);
+          ctx.strokeStyle = '#E2E8F0';
+          ctx.strokeRect(30, y, startX - 40, rowHeight);
+
+          ctx.fillStyle = '#0F172A';
+          ctx.textAlign = 'left';
+          ctx.font = 'bold 15px Outfit, sans-serif';
+          ctx.fillText(block.label, 42, y + 35);
+          ctx.font = '12px "Plus Jakarta Sans", sans-serif';
+          ctx.fillStyle = '#64748B';
+          ctx.fillText(block.sub, 42, y + 60);
+
+          DAYS.forEach((day, cIdx) => {
+            const x = startX + cIdx * colWidth;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x, y, colWidth - 8, rowHeight);
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.strokeRect(x, y, colWidth - 8, rowHeight);
+
+            const slotKey = `${day}-${block.id}`;
+            const cellTasks = weeklySchedule[slotKey] || [];
+
+            cellTasks.forEach((taskTitle, tIdx) => {
+              if (tIdx > 2) return;
+              const cardY = y + 10 + tIdx * 48;
+              ctx.fillStyle = '#EEF2FF';
+              ctx.fillRect(x + 5, cardY, colWidth - 18, 40);
+              ctx.strokeStyle = '#6366F1';
+              ctx.strokeRect(x + 5, cardY, colWidth - 18, 40);
+
+              ctx.fillStyle = '#1E1B4B';
+              ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
+              ctx.textAlign = 'left';
+              const truncated = taskTitle.length > 22 ? taskTitle.slice(0, 20) + '...' : taskTitle;
+              ctx.fillText(`• ${truncated}`, x + 10, cardY + 24);
+            });
+          });
+        });
+
+        setTimeout(() => {
+          const imageURI = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.download = `Agenda_Semanal_${(studentName || 'Estudiante').replace(/\s+/g, '_')}.png`;
+          downloadLink.href = imageURI;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }, 100);
+      };
+
+      const isM1Done = unlockedScenes[4];
+      const isM2Done = unlockedScenes[5];
+      const isM3Done = unlockedScenes[6];
+      const isM4Done = unlockedScenes[7];
+      const isM5Done = quizSubmitted && quizScore >= 66;
+
+      const completedModulesCount = [isM1Done, isM2Done, isM3Done, isM4Done, isM5Done].filter(Boolean).length;
+      const progressPercent = Math.min(100, Math.round((completedModulesCount / 5) * 100));
+
+      return (
+        <div className="flex flex-col min-h-screen">
+          {/* TOAST FLOTANTE */}
+          {toastMessage && (
+            <div className="fixed bottom-6 right-6 z-50 max-w-md bg-slate-900 text-white px-5 py-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center space-x-3 transition-all animate-bounce">
+              <span className="text-2xl">⚡</span>
+              <p className="text-sm font-medium leading-relaxed">{toastMessage}</p>
+            </div>
+          )}
+
+          {/* MODAL: REFERENCIAS BIBLIOGRÁFICAS */}
+          {showReferences && (
+            <div
+              className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+              onClick={() => setShowReferences(false)}
+            >
+              <div
+                className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden my-8"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="refs-title"
+              >
+                <div className="bg-gradient-to-r from-indigo-700 to-violet-600 px-6 py-5 flex items-start justify-between text-white">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-indigo-200">Sustento teórico del OVA</p>
+                    <h2 id="refs-title" className="text-xl sm:text-2xl font-bold">📚 Referencias Bibliográficas</h2>
+                    <p className="text-xs text-indigo-100 mt-1">Formato APA 7.ª edición</p>
+                  </div>
+                  <button
+                    onClick={() => setShowReferences(false)}
+                    className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-lg font-bold transition"
+                    aria-label="Cerrar referencias"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="px-6 py-5 max-h-[65vh] overflow-y-auto space-y-6">
+                  {BIBLIOGRAPHY.map((group) => (
+                    <section key={group.category}>
+                      <h3 className="text-sm font-bold text-indigo-700 mb-3 pb-1.5 border-b border-indigo-100">{group.category}</h3>
+                      <ul className="space-y-3">
+                        {group.items.map((ref, i) => (
+                          <li key={i} className="text-sm text-slate-700 leading-relaxed pl-8 -indent-8">
+                            {ref.before}<em>{ref.italic}</em>{ref.after}{' '}
+                            {ref.url && (
+                              <a href={ref.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">
+                                {ref.url}
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </div>
+
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      const text = BIBLIOGRAPHY.flatMap(g => g.items)
+                        .map(r => `${r.before}${r.italic}${r.after}${r.url ? ' ' + r.url : ''}`)
+                        .join('\n\n');
+                      try {
+                        navigator.clipboard.writeText(text);
+                        triggerLockAlert('📋 Referencias copiadas al portapapeles.');
+                      } catch (err) {
+                        triggerLockAlert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-100 transition"
+                  >
+                    📋 Copiar referencias
+                  </button>
+                  <button
+                    onClick={() => setShowReferences(false)}
+                    className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* HEADER GLOBAL */}
+          <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div 
+                className="flex items-center space-x-3 cursor-pointer" 
+                onClick={() => {
+                  if (unlockedScenes[2]) setCurrentScene(2);
+                }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-200">
+                  ⚡
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-slate-900 leading-tight">OrganIZ@</h1>
+                  <p className="text-xs text-slate-500">Tu guía digital de gestión del tiempo</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="hidden sm:flex flex-col items-end">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600">
+                    <span>Progreso del OVA:</span>
+                    <span className="text-indigo-600 font-bold">{progressPercent}%</span>
+                  </div>
+                  <div className="w-32 bg-slate-200 rounded-full h-2 mt-1 overflow-hidden">
+                    <div 
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowReferences(true)}
+                  className="flex items-center space-x-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 px-3 py-1.5 rounded-full text-indigo-700 text-xs sm:text-sm font-semibold shadow-sm transition"
+                  title="Ver referencias bibliográficas"
+                >
+                  <span>📚</span>
+                  <span className="hidden sm:inline">Referencias</span>
+                </button>
+                <div className="flex items-center space-x-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full text-amber-800 text-sm font-bold shadow-sm">
+                  <IconSparkles />
+                  <span>{xpPoints} XP</span>
+                </div>
+
+                {studentName && (
+                  <div className="hidden md:flex items-center space-x-2 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full text-indigo-700 text-xs font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>{studentName}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            {/* ESCENA 1: ONBOARDING */}
+            {currentScene === 1 && (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                  <div className="grid md:grid-cols-12 gap-0">
+                    
+                    <div className="md:col-span-5 bg-gradient-to-br from-indigo-700 via-indigo-600 to-brand-900 p-8 text-white flex flex-col justify-between relative overflow-hidden">
+                      <div className="relative z-10">
+                        <span className="inline-block bg-white/20 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">
+                          Objeto Virtual de Aprendizaje
+                        </span>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+                          ¿Sientes que el tiempo no te alcanza?
+                        </h2>
+                        <p className="text-indigo-100 text-sm leading-relaxed mb-6">
+                          Aprende a dominar tus horarios escolares, eliminar la procrastinación y descargar tu diploma oficial con la <strong className="text-white underline decoration-amber-400">Matriz de Eisenhower</strong>.
+                        </p>
+
+                        <div className="space-y-3 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10 text-xs">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-emerald-400 font-bold">✓</span>
+                            <span>Cápsula de video formativa con puntos de control</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-emerald-400 font-bold">✓</span>
+                            <span>Matriz personalizable: añade y elimina tus tareas</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-emerald-400 font-bold">✓</span>
+                            <span>Agenda semanal interactiva y Diploma descargable</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-8 text-xs text-indigo-200 text-center">
+                        Diseño Instruccional Adaptativo
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-7 p-8 md:p-10 flex flex-col justify-center">
+                      <div className="mb-6">
+                        <h3 className="text-2xl font-bold text-slate-900 mb-2">¡Hola! Personalicemos tu experiencia</h3>
+                        <p className="text-sm text-slate-500">
+                          Ingresa tus datos para generar tu diploma de acreditación y personalizar tu agenda de estudio.
+                        </p>
+                      </div>
+
+                      <form onSubmit={handleStartOnboarding} className="space-y-5">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Tu Nombre Completo *
+                          </label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej: Ronal Daza"
+                            value={studentName}
+                            onChange={(e) => setStudentName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition text-slate-800 font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Nivel o Grado Escolar
+                          </label>
+                          <select 
+                            value={schoolGrade}
+                            onChange={(e) => setSchoolGrade(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 bg-white"
+                          >
+                            <option value="Secundaria / Grado 8-9">Secundaria / Grados 8° - 9°</option>
+                            <option value="Educación Media / Grado 10-11">Educación Media / Grados 10° - 11°</option>
+                            <option value="Pregrado / Universitario">Universidad / Pregrado</option>
+                            <option value="Educación Técnica / Tecnológica">Educación Técnica / Tecnológica</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            ¿Cuál es tu mayor obstáculo con el tiempo?
+                          </label>
+                          <select 
+                            value={mainChallenge}
+                            onChange={(e) => setMainChallenge(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 bg-white"
+                          >
+                            <option value="Dejo todo para última hora (Procrastinación)">Dejo todo para última hora (Procrastinación)</option>
+                            <option value="Me distraigo fácilmente con redes y celular">Me distraigo con notificaciones y redes</option>
+                            <option value="Tengo demasiadas materias y no sé qué priorizar">Tengo demasiadas materias y me abrumo</option>
+                          </select>
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition duration-200 flex items-center justify-center space-x-2 text-base"
+                          >
+                            <span>COMENZAR LA RUTA DE APRENDIZAJE</span>
+                            <span>➔</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ESCENA 2: RUTA DE APRENDIZAJE (MENÚ DE CONTENIDOS) */}
+            {currentScene === 2 && (
+              <div className="max-w-4xl mx-auto space-y-8">
+                
+                <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-brand-900 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div>
+                    <span className="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold uppercase">
+                      Panel de Control del Alumno
+                    </span>
+                    <h2 className="text-3xl font-extrabold mt-2">
+                      ¡Bienvenido a tu Misión, {studentName || 'Estudiante'}!
+                    </h2>
+                    <p className="text-indigo-200 text-sm mt-1 max-w-xl">
+                      Para convertirte en un Organizador PRO y desbloquear tu diploma y agenda personalizada, completa cada módulo de forma secuencial.
+                    </p>
+                    
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setCurrentScene(3)}
+                        className="bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2 text-sm"
+                      >
+                        <span>🎬 Entrar al Módulo 1 (Cápsula de Video)</span>
+                        <span>➔</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center min-w-[140px]">
+                    <div className="text-xs uppercase text-indigo-200 font-bold">Estado Actual</div>
+                    <div className="text-2xl font-black text-amber-300">{xpPoints} XP</div>
+                    <div className="text-xs text-indigo-100">{progressPercent}% Completado</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
+                    <span>🗺️</span>
+                    <span>Hoja de Ruta Secuencial de Aprendizaje</span>
+                  </h3>
+
+                  <div className="grid gap-3.5">
+                    {LEARNING_MODULES.map((mod) => {
+                      const isUnlocked = unlockedScenes[mod.sceneId];
+                      const isCompleted = unlockedScenes[mod.sceneId + 1] || (mod.sceneId === 7 && quizSubmitted && quizScore >= 66);
+
+                      return (
+                        <div
+                          key={mod.moduleNumber}
+                          onClick={() => handleNavigateToScene(mod.sceneId)}
+                          className={`p-5 rounded-2xl border transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                            isCompleted
+                              ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300'
+                              : isUnlocked
+                                ? 'bg-white hover:border-indigo-400 hover:shadow-md border-indigo-200 ring-2 ring-indigo-500/10'
+                                : 'bg-slate-100/80 border-slate-200 opacity-70 hover:bg-slate-200/50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                              isCompleted 
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : isUnlocked 
+                                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                  : 'bg-slate-200 text-slate-400'
+                            }`}>
+                              {isCompleted ? '✓' : mod.icon}
+                            </div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-bold text-slate-900 text-base">{mod.title}</h4>
+                                <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                                  {mod.tag}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5">{mod.sub} • Duración: {mod.duration}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            {isCompleted ? (
+                              <span className="flex items-center space-x-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                                <IconCheckCircle />
+                                <span>Completado</span>
+                              </span>
+                            ) : isUnlocked ? (
+                              <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-200 transition">
+                                Entrar Ahora ➔
+                              </button>
+                            ) : (
+                              <span className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 bg-slate-200/80 px-3.5 py-2 rounded-xl">
+                                <IconLock />
+                                <span>Bloqueado</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3 text-amber-900 text-xs">
+                  <span className="text-xl">💡</span>
+                  <div>
+                    <strong className="font-bold">Regla de Aprendizaje Secuencial:</strong> Haz clic en el <strong>Módulo 1</strong> para ver la cápsula audiovisual y desbloquear los siguientes pasos.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ESCENA 3: CÁPSULA AUDIOVISUAL */}
+            {currentScene === 3 && (
+              <div className="max-w-4xl mx-auto space-y-8">
+                
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <div>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Módulo 1 de 5</span>
+                    <h2 className="text-2xl font-bold text-slate-900">Cápsula Multimedia: La Matriz de Eisenhower</h2>
+                  </div>
+                  <button 
+                    onClick={() => setCurrentScene(2)}
+                    className="text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl transition shadow-sm"
+                  >
+                    ← Volver a la Ruta
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setMediaMode('youtube')}
+                        className={`text-xs font-bold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 ${
+                          mediaMode === 'youtube'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <span>📺 Video de YouTube</span>
+                      </button>
+
+                      <button
+                        onClick={() => setMediaMode('interactive')}
+                        className={`text-xs font-bold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 ${
+                          mediaMode === 'interactive'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <span>🎞️ Cápsula Interactiva (Paso a Paso)</span>
+                      </button>
+                    </div>
+
+                    {mediaMode === 'youtube' && (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1 underline decoration-indigo-300"
+                      >
+                        <span>Abrir video en YouTube</span>
+                        <IconExternalLink />
+                      </a>
+                    )}
+                  </div>
+
+                  {mediaMode === 'youtube' ? (
+                    <div className="space-y-3">
+                      <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 shadow-inner relative">
+                        {window.location.protocol === 'file:' ? (
+                          /* YouTube bloquea los videos incrustados (Error 153) cuando el archivo se abre
+                             con doble clic (file:///), porque no se envía la "identidad" (Referer) de la página.
+                             En ese caso mostramos una miniatura que abre el video en YouTube. */
+                          <a
+                            href={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group block w-full h-full relative"
+                            title="Ver el video en YouTube"
+                          >
+                            <img
+                              src={`https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`}
+                              alt="Miniatura del video sobre la Matriz de Eisenhower"
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent"></div>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                              <div className="w-20 h-14 bg-red-600 group-hover:bg-red-500 group-hover:scale-110 transition rounded-2xl flex items-center justify-center shadow-2xl">
+                                <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white"><path d="M8 5v14l11-7z"/></svg>
+                              </div>
+                              <p className="mt-4 text-white font-bold text-base sm:text-lg drop-shadow">Haz clic para ver el video en YouTube</p>
+                              <p className="mt-1 text-slate-200 text-xs max-w-md drop-shadow">
+                                Se abrirá en una pestaña nueva. Al terminar, regresa a esta pestaña para continuar.
+                                (Para verlo aquí mismo, abre el OVA con <strong>Iniciar-OVA.bat</strong>.)
+                              </p>
+                            </div>
+                          </a>
+                        ) : (
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`}
+                            title="Técnicas para la Gestión del Tiempo: El método Eisenhower"
+                            frameBorder="0"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                        <div className="text-slate-600 flex items-center space-x-2">
+                          <span className="text-base">🎬</span>
+                          <span><strong>Video oficial:</strong> <em>"El método Eisenhower (UCLM)"</em></span>
+                        </div>
+
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          const input = customVideoUrl.trim();
+                          if (!input) return;
+                          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                          const match = input.match(regExp);
+                          setYoutubeVideoId((match && match[2].length === 11) ? match[2] : input);
+                          setCustomVideoUrl('');
+                          triggerLockAlert("🎬 Video de YouTube actualizado.");
+                        }} className="flex items-center space-x-2 w-full sm:w-auto">
+                          <input
+                            type="text"
+                            placeholder="Pegar enlace de YouTube..."
+                            value={customVideoUrl}
+                            onChange={(e) => setCustomVideoUrl(e.target.value)}
+                            className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-56"
+                          />
+                          <button
+                            type="submit"
+                            className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-700 transition shrink-0"
+                          >
+                            Cargar
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 min-h-[340px] flex flex-col justify-between relative overflow-hidden shadow-inner">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="bg-amber-400 text-slate-900 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                            Paso {SLIDES_CAPSULE[currentSlide].step} de {SLIDES_CAPSULE.length} • {SLIDES_CAPSULE[currentSlide].badge}
+                          </span>
+                          <span className="text-xs text-indigo-200 font-semibold">Cápsula Activa</span>
+                        </div>
+
+                        <h3 className="text-2xl font-bold tracking-tight mb-3 text-white">
+                          {SLIDES_CAPSULE[currentSlide].title}
+                        </h3>
+
+                        <p className="text-sm text-indigo-100 leading-relaxed max-w-2xl mb-6">
+                          {SLIDES_CAPSULE[currentSlide].desc}
+                        </p>
+
+                        <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl text-xs text-amber-200 max-w-2xl">
+                          💡 <strong>Clave Pedagógica:</strong> {SLIDES_CAPSULE[currentSlide].tip}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-6 border-t border-white/10 mt-6">
+                        <button
+                          disabled={currentSlide === 0}
+                          onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
+                          className="bg-white/20 hover:bg-white/30 disabled:opacity-40 text-white text-xs font-bold px-4 py-2 rounded-xl transition"
+                        >
+                          ← Anterior
+                        </button>
+
+                        <div className="flex space-x-1.5">
+                          {SLIDES_CAPSULE.map((_, idx) => (
+                            <span 
+                              key={idx}
+                              onClick={() => setCurrentSlide(idx)}
+                              className={`w-3 h-3 rounded-full cursor-pointer transition ${
+                                idx === currentSlide ? 'bg-amber-400 scale-125' : 'bg-white/30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {currentSlide < SLIDES_CAPSULE.length - 1 ? (
+                          <button
+                            onClick={() => setCurrentSlide(prev => Math.min(SLIDES_CAPSULE.length - 1, prev + 1))}
+                            className="bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold px-4 py-2 rounded-xl transition shadow-md"
+                          >
+                            Siguiente ➔
+                          </button>
+                        ) : (
+                          <span className="text-xs text-emerald-300 font-bold flex items-center space-x-1">
+                            <span>✓ Cápsula completada</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Infografía de Cuadrantes */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-900">
+                    🔍 Exploración Conceptual: Los 4 Cuadrantes en la Vida Escolar
+                  </h3>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-5 hover:shadow-md transition">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">CUADRANTE 1</span>
+                        <span className="text-xs font-bold text-rose-700 uppercase">¡HACER DE INMEDIATO!</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-base mb-1">Urgente & Importante (Crisis / Fuegos)</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                        Son tareas con consecuencias graves si no se hacen hoy mismo. Ejemplos: Tarea que se entrega mañana temprano o repasar para la prueba de hoy.
+                      </p>
+                      <div className="bg-white/80 p-2.5 rounded-xl text-xs text-rose-900 font-medium border border-rose-100">
+                        ⚠️ <em>Consejo: Si pasas todo tu tiempo aquí, sufrirás estrés crónico.</em>
+                      </div>
+                    </div>
+
+                    <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-5 hover:shadow-md transition ring-2 ring-emerald-400/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">CUADRANTE 2 (CLAVE)</span>
+                        <span className="text-xs font-bold text-emerald-700 uppercase">¡PLANIFICAR!</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-base mb-1">No Urgente pero Importante (Éxito & Salud)</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                        Aquí está el secreto de los mejores estudiantes: estudiar con días de anticipación, hacer ejercicio, descansar bien y leer con calma.
+                      </p>
+                      <div className="bg-white/80 p-2.5 rounded-xl text-xs text-emerald-900 font-medium border border-emerald-100">
+                        ⭐ <em>Regla de oro: Dedica al menos el 60% de tu tiempo escolar aquí.</em>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 hover:shadow-md transition">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="bg-amber-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">CUADRANTE 3</span>
+                        <span className="text-xs font-bold text-amber-700 uppercase">¡DELEGAR / ACORDAR!</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-base mb-1">Urgente pero No Importante (Interrupciones)</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                        Peticiones de última hora de otros compañeros, favores que interrumpen tu estudio o mensajes que parecen apremiantes pero no aportan a tus notas.
+                      </p>
+                      <div className="bg-white/80 p-2.5 rounded-xl text-xs text-amber-900 font-medium border border-amber-100">
+                        🛡️ <em>Consejo: Aprende a decir 'te ayudo en 30 minutos cuando termine mi sesión'.</em>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-100 border-2 border-slate-300 rounded-2xl p-5 hover:shadow-md transition">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="bg-slate-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">CUADRANTE 4</span>
+                        <span className="text-xs font-bold text-slate-700 uppercase">¡ELIMINAR / LIMITAR!</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-base mb-1">Ni Urgente ni Importante (Ladrones de Tiempo)</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                        Scroll infinito en TikTok/Reels, maratón de videojuegos antes de entregar tareas o procrastinación pasiva.
+                      </p>
+                      <div className="bg-white/80 p-2.5 rounded-xl text-xs text-slate-700 font-medium border border-slate-200">
+                        🛑 <em>Ojo: El descanso activo es Q2; perder 3 horas en la cama sin descansar es Q4.</em>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkpoint Reflexivo */}
+                <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+                  <h4 className="font-bold text-slate-900 text-base mb-2 flex items-center space-x-2">
+                    <span>⚡</span>
+                    <span>Punto de Control Reflexivo: ¿Listo para avanzar?</span>
+                  </h4>
+                  <p className="text-xs text-slate-600 mb-4">
+                    Responde correctamente para validar la comprensión de los conceptos y desbloquear el Laboratorio Práctico:
+                  </p>
+
+                  <div className="space-y-2 mb-4">
+                    {[
+                      "Una tarea urgente siempre es más importante que cualquier otra actividad.",
+                      "Las tareas del Cuadrante 2 (Importantes pero No Urgentes) evitan las crisis si se planifican con tiempo.",
+                      "Debo pasar el 90% de mi día en el Cuadrante 4 para no aburrirme."
+                    ].map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleVideoCheckpoint(i)}
+                        className={`w-full text-left p-3.5 rounded-xl border text-xs font-semibold transition ${
+                          videoCheckpointAnswer === i
+                            ? i === 1 
+                              ? 'bg-emerald-100 border-emerald-400 text-emerald-900' 
+                              : 'bg-rose-100 border-rose-400 text-rose-900'
+                            : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-800'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+
+                  {videoCheckpointAnswer === 1 && (
+                    <div className="p-3 bg-emerald-100/70 border border-emerald-300 text-emerald-900 rounded-xl text-xs mb-4">
+                      🎉 <strong>¡Correcto!</strong> Has asimilado el concepto central. Ahora puedes continuar al taller práctico.
+                    </div>
+                  )}
+
+                  <button
+                    disabled={!videoWatched}
+                    onClick={() => unlockNextScene(4, 150)}
+                    className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center space-x-2 ${
+                      videoWatched 
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200' 
+                        : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>{videoWatched ? "CONTINUAR AL LABORATORIO PRÁCTICO (+150 XP) ➔" : "🔒 Responde el Punto de Control para Desbloquear"}</span>
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================== */}
+            {/* ESCENA 4: LABORATORIO DE PRIORIZACIÓN (CON BOTÓN ELIMINAR)     */}
+            {/* ============================================================== */}
+            {currentScene === 4 && (
+              <div className="max-w-5xl mx-auto space-y-8">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Módulo 2 de 5</span>
+                    <h2 className="text-2xl font-bold text-slate-900">Laboratorio Interactivo de Priorización</h2>
+                    <p className="text-xs text-slate-500">Agrega tus deberes reales, clasifícalos y elimina las tareas que ya no necesites.</p>
+                  </div>
+                  <button 
+                    onClick={() => setCurrentScene(2)}
+                    className="text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl transition shadow-sm self-start sm:self-auto"
+                  >
+                    ← Volver a la Ruta
+                  </button>
+                </div>
+
+                {/* FORMULARIO TAREAS REALES */}
+                <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl p-6 border border-indigo-100 shadow-sm">
+                  <h3 className="text-base font-bold text-indigo-950 mb-1 flex items-center space-x-2">
+                    <IconPlus />
+                    <span>Personaliza: Añade tus Tareas y Asignaturas Reales</span>
+                  </h3>
+                  <p className="text-xs text-indigo-700 mb-4">
+                    Escribe compromisos reales de esta semana para incluirlos en tu agenda semanal.
+                  </p>
+
+                  <form onSubmit={handleAddCustomTask} className="grid sm:grid-cols-12 gap-3 items-end">
+                    <div className="sm:col-span-4">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la Tarea / Compromiso</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ej: Taller de Química Orgánica"
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Materia / Asignatura</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ej: Química / Inglés"
+                        value={newTaskSubject}
+                        onChange={(e) => setNewTaskSubject(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Cuadrante Asignado</label>
+                      <select 
+                        value={newTaskQuadrant}
+                        onChange={(e) => setNewTaskQuadrant(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      >
+                        <option value="q1">Q1: Urgente e Importante (Hacer Ya)</option>
+                        <option value="q2">Q2: Importante / Planificar (Estudio con tiempo)</option>
+                        <option value="q3">Q3: Urgente / Interrupción</option>
+                        <option value="q4">Q4: Ocio / Procrastinación</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <button
+                        type="submit"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-sm transition flex items-center justify-center space-x-1"
+                      >
+                        <span>+ Añadir</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* MATRIZ 2X2 CON BOTÓN DE ELIMINAR */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'q1', title: 'Q1: HACER INMEDIATO', sub: 'Urgente & Importante', bg: 'bg-rose-50/60', border: 'border-rose-300', badge: 'bg-rose-600' },
+                    { id: 'q2', title: 'Q2: PLANIFICAR CON TIEMPO', sub: 'No Urgente pero Importante', bg: 'bg-emerald-50/60', border: 'border-emerald-300', badge: 'bg-emerald-600' },
+                    { id: 'q3', title: 'Q3: INTERRUPCIONES / DELEGAR', sub: 'Urgente pero No Importante', bg: 'bg-amber-50/60', border: 'border-amber-300', badge: 'bg-amber-600' },
+                    { id: 'q4', title: 'Q4: ELIMINAR / LIMITAR', sub: 'Ni Urgente ni Importante', bg: 'bg-slate-100/70', border: 'border-slate-300', badge: 'bg-slate-600' },
+                  ].map(quad => {
+                    const quadTasks = tasks.filter(t => t.quadrant === quad.id);
+                    return (
+                      <div key={quad.id} className={`${quad.bg} border-2 ${quad.border} rounded-2xl p-5 min-h-[220px] flex flex-col justify-between shadow-sm`}>
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`${quad.badge} text-white text-xs font-bold px-2.5 py-0.5 rounded-md`}>
+                              {quad.title}
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-semibold">{quadTasks.length} tarea(s)</span>
+                          </div>
+                          <p className="text-xs text-slate-600 mb-3">{quad.sub}</p>
+
+                          <div className="space-y-2">
+                            {quadTasks.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic py-4 text-center">No hay tareas en este cuadrante aún.</p>
+                            ) : (
+                              quadTasks.map(task => (
+                                <div key={task.id} className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between group hover:border-slate-300 transition">
+                                  <div className="flex-1 pr-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs font-bold text-slate-800">{task.title}</span>
+                                      {task.isCustom && (
+                                        <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded">
+                                          Personal
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[11px] text-slate-500">{task.subject} • {task.due}</span>
+                                  </div>
+
+                                  {/* BOTÓN ELIMINAR TAREA */}
+                                  <button
+                                    onClick={() => handleDeleteTask(task.id, task.title)}
+                                    className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition"
+                                    title="Eliminar esta tarea de la matriz"
+                                  >
+                                    <IconTrash />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-200/50 mt-3 text-[11px] text-slate-500 flex justify-between items-center">
+                          <span>💡 Puedes agregar o eliminar tareas en cualquier momento</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-slate-600">
+                    <strong className="text-slate-800">Tareas activas en tu inventario:</strong> {tasks.length} disponibles para organizar en tu agenda semanal.
+                  </div>
+                  <button
+                    onClick={() => unlockNextScene(5, 200)}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md shadow-indigo-200 transition text-sm flex items-center justify-center space-x-2"
+                  >
+                    <span>GUARDAR PRIORIDADES Y CREAR MI AGENDA (+200 XP)</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================== */}
+            {/* ESCENA 5: AGENDA SEMANAL (CON FORMULARIO PARA AÑADIR)          */}
+            {/* ============================================================== */}
+            {currentScene === 5 && (
+              <div className="max-w-6xl mx-auto space-y-8">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Módulo 3 de 5</span>
+                    <h2 className="text-2xl font-bold text-slate-900">Diseñador y Descargador de Agenda Semanal</h2>
+                    <p className="text-xs text-slate-500">Añade actividades directamente a los días respectivos y descárgala en imagen PNG lista para imprimir.</p>
+                  </div>
+                  <button 
+                    onClick={() => setCurrentScene(2)}
+                    className="text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl transition shadow-sm self-start sm:self-auto"
+                  >
+                    ← Volver a la Ruta
+                  </button>
+                </div>
+
+                {/* FORMULARIO DIRECTO PARA AÑADIR ACTIVIDADES A LA AGENDA */}
+                <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-200 rounded-3xl p-6 shadow-sm">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                      +
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900">Añadir Nueva Actividad a un Día Específico</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-4">
+                    Escribe cualquier compromiso (clases, deporte, estudio, descanso) y elige el día y franja horaria donde deseas programarlo.
+                  </p>
+
+                  <form onSubmit={handleAddDirectAgendaActivity} className="grid sm:grid-cols-12 gap-3 items-end">
+                    <div className="sm:col-span-5">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la Actividad</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Ej: Clase de Inglés / Repaso de Matemáticas / Deporte"
+                        value={agendaDirectTitle}
+                        onChange={(e) => setAgendaDirectTitle(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Día de la Semana</label>
+                      <select 
+                        value={agendaDirectDay}
+                        onChange={(e) => setAgendaDirectDay(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                      >
+                        {DAYS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Franja Horaria</label>
+                      <select 
+                        value={agendaDirectBlock}
+                        onChange={(e) => setAgendaDirectBlock(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                      >
+                        <option value="morning">Mañana (8-12)</option>
+                        <option value="afternoon">Tarde (14-17)</option>
+                        <option value="evening">Noche (18-21)</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <button
+                        type="submit"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-md shadow-emerald-200 transition flex items-center justify-center space-x-1"
+                      >
+                        <span>+ Añadir al Día</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Acciones de Descarga */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2 text-xs text-slate-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                    <span>También puedes asignar tareas del banco haciendo clic en las iniciales de los días abajo.</span>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={generateAndDownloadAgenda}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-200 transition flex items-center space-x-2"
+                    >
+                      <IconDownload />
+                      <span>DESCARGAR AGENDA (PNG)</span>
+                    </button>
+
+                    <button
+                      onClick={() => window.print()}
+                      className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2"
+                    >
+                      <span>🖨️ Imprimir</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* BANCO DE TAREAS */}
+                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-950 mb-2">
+                    Banco de Tareas de la Matriz (Asignar rápido a la Tarde):
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {tasks.map(t => (
+                      <div key={t.id} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs flex items-center space-x-2 shadow-xs">
+                        <span className={`w-2 h-2 rounded-full ${
+                          t.quadrant === 'q1' ? 'bg-rose-500' :
+                          t.quadrant === 'q2' ? 'bg-emerald-500' :
+                          t.quadrant === 'q3' ? 'bg-amber-500' : 'bg-slate-400'
+                        }`}></span>
+                        <span className="font-semibold text-slate-800">{t.title}</span>
+                        <div className="flex items-center space-x-1 pl-2 border-l border-slate-200">
+                          {DAYS.map(day => (
+                            <button
+                              key={day}
+                              onClick={() => handleAssignToAgenda(t.title, day, 'afternoon')}
+                              className="text-[10px] text-indigo-600 hover:bg-indigo-50 px-1 py-0.5 rounded font-bold"
+                              title={`Asignar a ${day} Tarde`}
+                            >
+                              {day.slice(0, 1)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* TABLA AGENDA */}
+                <div id="printable-agenda" className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6">
+                  <div className="text-center pb-4 mb-4 border-b border-slate-100">
+                    <h3 className="text-xl font-extrabold text-slate-900">Agenda Semanal de {studentName || 'Estudiante'}</h3>
+                    <p className="text-xs text-slate-500">Plan de estudios equilibrado: Mañanas escolares, tardes de enfoque Q2 y noches de descanso</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
+                      <thead>
+                        <tr>
+                          <th className="p-3 bg-slate-100 text-xs font-bold text-slate-700 uppercase rounded-l-xl w-36">
+                            Franja
+                          </th>
+                          {DAYS.map(day => (
+                            <th key={day} className="p-3 bg-slate-100 text-xs font-bold text-slate-800 text-center uppercase">
+                              {day}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {TIME_BLOCKS.map(block => (
+                          <tr key={block.id}>
+                            <td className="p-3 bg-slate-50 text-xs font-bold text-slate-700 align-top">
+                              <div>{block.label}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">{block.sub}</div>
+                            </td>
+
+                            {DAYS.map(day => {
+                              const slotKey = `${day}-${block.id}`;
+                              const cellTasks = weeklySchedule[slotKey] || [];
+                              return (
+                                <td key={day} className="p-2 border border-slate-100 align-top min-w-[120px] bg-white">
+                                  <div className="space-y-1.5 min-h-[70px]">
+                                    {cellTasks.map((taskText, idx) => (
+                                      <div 
+                                        key={idx} 
+                                        className="bg-indigo-50/90 border border-indigo-200 text-indigo-900 text-[11px] p-2 rounded-lg font-medium flex items-center justify-between group shadow-2xs"
+                                      >
+                                        <span className="truncate max-w-[90px]">{taskText}</span>
+                                        <button 
+                                          onClick={() => handleRemoveFromAgenda(day, block.id, taskText)}
+                                          className="text-rose-500 opacity-60 hover:opacity-100 font-bold ml-1 text-sm hover:scale-125 transition"
+                                          title="Eliminar esta actividad del día"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {cellTasks.length === 0 && (
+                                      <div className="h-full flex items-center justify-center text-[10px] text-slate-300 italic pt-2">
+                                        Libre
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <canvas 
+                  ref={agendaCanvasRef} 
+                  width={1400} 
+                  height={800} 
+                  style={{ display: 'none' }}
+                />
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-slate-600">
+                    ✓ ¿Agenda lista? Asegúrate de haberla descargado o revisado antes del Quiz.
+                  </div>
+                  <button
+                    onClick={() => unlockNextScene(6, 250)}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md shadow-indigo-200 transition text-sm flex items-center justify-center space-x-2"
+                  >
+                    <span>IR AL DESAFÍO DE CASOS REALES (QUIZ) (+250 XP)</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================== */}
+            {/* ESCENA 6: EVALUACIÓN CON RETROALIMENTACIÓN PEDAGÓGICA          */}
+            {/* ============================================================== */}
+            {currentScene === 6 && (
+              <div className="max-w-3xl mx-auto space-y-8">
+                
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <div>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Módulo 4 de 5</span>
+                    <h2 className="text-2xl font-bold text-slate-900">Desafío Evaluativo: Toma de Decisiones</h2>
+                    <p className="text-xs text-slate-500">Demuestra tu criterio de priorización. Cada respuesta cuenta con retroalimentación formativa.</p>
+                  </div>
+                  <button 
+                    onClick={() => setCurrentScene(2)}
+                    className="text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl transition shadow-sm"
+                  >
+                    ← Volver a la Ruta
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {QUIZ_QUESTIONS.map((q, idx) => {
+                    const selectedIdx = quizAnswers[q.id];
+                    const selectedOption = selectedIdx !== undefined ? q.options[selectedIdx] : null;
+
+                    return (
+                      <div key={q.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md">
+                            Caso {idx + 1}
+                          </span>
+                          <h4 className="font-bold text-slate-900 text-sm">{q.question}</h4>
+                        </div>
+
+                        <div className="space-y-2 mt-4">
+                          {q.options.map((opt, oIdx) => {
+                            const isSelected = selectedIdx === oIdx;
+                            return (
+                              <button
+                                key={oIdx}
+                                disabled={quizSubmitted}
+                                onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: oIdx }))}
+                                className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition ${
+                                  isSelected
+                                    ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-bold ring-1 ring-indigo-500'
+                                    : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
+                                    isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
+                                  }`}>
+                                    {isSelected ? '✓' : ''}
+                                  </span>
+                                  <span>{opt.text}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* RETROALIMENTACIÓN FORMATIVA INDIVIDUALIZADA */}
+                        {quizSubmitted && selectedOption && (
+                          <div className={`mt-4 p-4 rounded-2xl text-xs leading-relaxed border ${
+                            selectedOption.isCorrect
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                              : 'bg-rose-50 border-rose-300 text-rose-950'
+                          }`}>
+                            <div className="font-bold text-sm mb-1 flex items-center space-x-1.5">
+                              <span>{selectedOption.isCorrect ? '✅ Respuesta Correcta' : '❌ Respuesta Incorrecta'}</span>
+                            </div>
+                            <p className="mt-1">{selectedOption.feedback}</p>
+
+                            {!selectedOption.isCorrect && (
+                              <div className="mt-2.5 pt-2 border-t border-rose-200/60 text-slate-700 font-medium">
+                                💡 <strong>Opción correcta:</strong> {q.options.find(o => o.isCorrect).text}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!quizSubmitted ? (
+                  <button
+                    disabled={Object.keys(quizAnswers).length < QUIZ_QUESTIONS.length}
+                    onClick={handleEvaluateQuiz}
+                    className={`w-full py-4 px-6 rounded-2xl font-bold text-sm shadow-md transition flex items-center justify-center space-x-2 ${
+                      Object.keys(quizAnswers).length === QUIZ_QUESTIONS.length
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>CALIFICAR EVALUACIÓN FORMATIVA</span>
+                    <span>➔</span>
+                  </button>
+                ) : (
+                  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-md text-center space-y-4">
+                    <div className="text-3xl">🎯</div>
+                    <h3 className="text-xl font-extrabold text-slate-900">
+                      Tu Puntaje: <span className={quizScore >= 66 ? 'text-emerald-600' : 'text-rose-600'}>{quizScore}%</span>
+                    </h3>
+                    <p className="text-xs text-slate-600 max-w-md mx-auto">
+                      {quizScore >= 66 
+                        ? '¡Felicitaciones! Has demostrado una comprensión sobresaliente de la priorización escolar. ¡Tu diploma está listo!' 
+                        : 'Revisa las explicaciones de cada caso arriba para corregir tus dudas y vuelve a intentarlo.'}
+                    </p>
+
+                    {quizScore >= 66 ? (
+                      <button
+                        onClick={() => unlockNextScene(7, 300)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-emerald-200 transition text-sm"
+                      >
+                        RECLAMAR MI DIPLOMA E INSIGNIA FINAL (+300 XP) ➔
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setQuizSubmitted(false);
+                          setQuizAnswers({});
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl text-xs transition"
+                      >
+                        🔄 Reintentar Evaluación con lo Aprendido
+                      </button>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {/* ESCENA 7: DIPLOMA E INSIGNIA */}
+            {currentScene === 7 && (
+              <div className="max-w-4xl mx-auto space-y-8 text-center">
+                
+                <div className="bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                  <div className="relative z-10 space-y-3">
+                    <div className="inline-block bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-amber-200">
+                      ¡Misión Cumplida!
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                      ¡Felicidades, Organizador PRO!
+                    </h2>
+                    <p className="text-sm text-indigo-100 max-w-xl mx-auto">
+                      {studentName || 'Estudiante'}, has completado satisfactoriamente los 5 módulos de OrganIZ@. Tienes las herramientas para vencer la procrastinación.
+                    </p>
+                    <div className="text-2xl font-black text-amber-300 pt-2">
+                      ⭐ Puntaje Final: {xpPoints} Puntos XP
+                    </div>
+                  </div>
+                </div>
+
+                {/* Previsualización del Diploma */}
+                <div className="bg-white p-6 sm:p-8 rounded-3xl border-4 border-amber-300 shadow-2xl max-w-3xl mx-auto text-left relative">
+                  <div className="border-2 border-indigo-900 p-6 sm:p-8 rounded-2xl relative bg-slate-50/50">
+                    <div className="text-center space-y-2 mb-6">
+                      <div className="text-xs font-black tracking-widest text-indigo-700 uppercase">
+                        ORGANIZ@ • OBJETO VIRTUAL DE APRENDIZAJE
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
+                        DIPLOMA DE EXCELENCIA ACADÉMICA
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        En Gestión del Tiempo, Planificación y Priorización Escolar
+                      </p>
+                    </div>
+
+                    <div className="text-center space-y-4 my-8">
+                      <p className="text-xs text-slate-600 uppercase tracking-widest font-semibold">
+                        Acreditado Oficialmente a:
+                      </p>
+                      <div className="text-3xl sm:text-4xl font-black text-indigo-900 border-b-2 border-amber-400 pb-2 inline-block px-8">
+                        {studentName || 'Estudiante Ejemplar'}
+                      </div>
+                      <p className="text-xs text-slate-600 max-w-md mx-auto italic pt-2">
+                        Por haber dominado la Matriz de Eisenhower, diseñar su horario semanal estratégico y superar los dilemas prácticos de gestión escolar.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 pt-6 mt-8 text-xs text-slate-600 gap-4">
+                      <div>
+                        <strong>Nivel:</strong> {schoolGrade}
+                      </div>
+                      <div className="text-center">
+                        <span className="inline-block bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full border border-amber-300">
+                          🏅 Insignia: Maestro del Tiempo
+                        </span>
+                      </div>
+                      <div>
+                        <strong>Fecha:</strong> {new Date().toLocaleDateString('es-ES')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <canvas 
+                  ref={diplomaCanvasRef} 
+                  width={1200} 
+                  height={850} 
+                  style={{ display: 'none' }}
+                />
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                  <button
+                    onClick={generateAndDownloadDiploma}
+                    className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-amber-200 transition text-sm flex items-center justify-center space-x-2"
+                  >
+                    <IconDownload />
+                    <span>DESCARGAR DIPLOMA OFICIAL (PNG)</span>
+                  </button>
+
+                  <button
+                    onClick={generateAndDownloadAgenda}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-indigo-200 transition text-sm flex items-center justify-center space-x-2"
+                  >
+                    <IconCalendar />
+                    <span>DESCARGAR MI AGENDA SEMANAL (PNG)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCurrentScene(2);
+                    }}
+                    className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-6 rounded-xl transition text-sm"
+                  >
+                    Revisar Módulos
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+          </main>
+
+          <footer className="bg-white border-t border-slate-200 mt-12 py-6">
+            <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-1">
+              <p><strong>OrganIZ@: Tu guía digital</strong> — Objeto Virtual de Aprendizaje (OVA) para Instituciones Educativas.</p>
+              <p>Enfoque de Diseño Instruccional: Modelo ADDIE + Gamificación Activa + Canvas API Cliente Seguro.</p>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
